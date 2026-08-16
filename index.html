@@ -1,0 +1,201 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="theme-color" content="#111111">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="manifest" href="manifest.webmanifest">
+  <title>Management — Finance</title>
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+<main class="app">
+  <header class="topbar">
+    <div>
+      <p class="eyebrow">MANAGEMENT</p>
+      <h1>Finance</h1>
+    </div>
+    <div class="top-actions">
+      <span id="connectionStatus" class="connection-status" role="status" aria-live="polite">Online</span>
+      <button id="installBtn" class="secondary-btn hidden">Install</button>
+      <button id="addBtn" class="primary-btn">＋ Add</button>
+    </div>
+  </header>
+
+  <section class="summary">
+    <article><span>Have to pay</span><strong id="plannedTotal">₹0</strong></article>
+    <article><span>Spent</span><strong id="spentTotal">₹0</strong></article>
+    <!-- Remaining is intentionally hidden for the current product design.
+    <article><span>Remaining</span><strong id="remainingTotal">₹0</strong></article>
+    -->
+  </section>
+
+  <section class="toolbar">
+    <div class="toolbar-group">
+      <div class="status-filters" aria-label="Status filter">
+        <button class="filter active" data-filter="ALL">All</button>
+        <button class="filter" data-filter="PLANNED">Planned</button>
+        <button class="filter" data-filter="SPENT">Spent</button>
+      </div>
+      <div class="archive-filters" aria-label="Record scope">
+        <button class="archive-filter active" data-archive-scope="ACTIVE">Active</button>
+        <button class="archive-filter" data-archive-scope="ARCHIVED">Archived</button>
+      </div>
+      <div class="period-filters" aria-label="Date period filter">
+        <button class="period-filter active" data-period="ALL" title="All dates"><span class="desktop-label">All</span><span class="mobile-label">∞</span></button>
+        <button class="period-filter" data-period="DAY" title="Today"><span class="desktop-label">Today</span><span class="mobile-label">D</span></button>
+        <button class="period-filter" data-period="WEEK" title="This week"><span class="desktop-label">Week</span><span class="mobile-label">W</span></button>
+        <button class="period-filter" data-period="MONTH" title="This month"><span class="desktop-label">Month</span><span class="mobile-label">M</span></button>
+        <button class="period-filter" data-period="YEAR" title="This year"><span class="desktop-label">Annual</span><span class="mobile-label">A</span></button>
+      </div>
+    </div>
+    <div class="toolbar-actions">
+      <div class="archive-actions">
+        <button id="archiveVisibleBtn" class="text-btn archive-btn" title="Archive records currently visible">
+          <span class="archive-glyph" aria-hidden="true">▣</span>
+          <span>Archive</span>
+        </button>
+        <button id="archiveAllBtn" class="text-btn archive-all-btn" title="Archive all active finance records in the whole app">
+          <span class="archive-glyph" aria-hidden="true">▣</span>
+          <span>Archive all</span>
+        </button>
+      </div>
+      <div class="export-actions">
+        <button id="exportCsvBtn" class="text-btn">Export CSV</button>
+        <button id="exportJsonBtn" class="text-btn">Export JSON</button>
+      </div>
+    </div>
+  </section>
+
+  <section class="table-card">
+    <div class="table-scroll">
+      <table>
+        <thead>
+          <tr>
+            <th>Amount</th>
+            <th>For what</th>
+            <th>Status</th>
+            <th>Paid through</th>
+            <th>Planned on</th>
+            <th>Spent on</th>
+            <th class="actions-head"></th>
+          </tr>
+        </thead>
+        <tbody id="entryBody"></tbody>
+      </table>
+    </div>
+    <div id="emptyState" class="empty hidden">
+      <h2>No finance entries</h2>
+      <p>Click <strong>＋ Add</strong> to create your first entry.</p>
+    </div>
+  </section>
+
+  <!-- Quick service shortcuts: global definitions, record created in active sheet -->
+  <section class="services-strip" aria-label="Services">
+    <div id="serviceButtons" class="service-buttons"></div>
+  </section>
+
+  <!-- Google Sheets / Excel-style sheet tabs -->
+  <section class="sheet-bar" aria-label="Finance sheets">
+    <div id="sheetTabs" class="sheet-tabs"></div>
+    <button id="settingsBtn" class="sheet-add sheet-settings" title="Services settings" aria-label="Services settings">⚙</button>
+    <button id="addSheetBtn" class="sheet-add" title="Add sheet" aria-label="Add sheet">＋</button>
+  </section>
+</main>
+
+<div id="archiveDialog" class="sheet-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="archiveDialogTitle">
+  <div class="sheet-dialog-card archive-dialog-card">
+    <div class="sheet-dialog-header">
+      <h2 id="archiveDialogTitle">Archive records</h2>
+      <button id="closeArchiveDialog" class="icon-btn" aria-label="Close">×</button>
+    </div>
+    <p id="archiveDialogText" class="archive-dialog-text"></p>
+    <div class="archive-dialog-options">
+      <button id="archiveVisibleConfirm" class="primary-btn">Archive visible</button>
+      <button id="archivePeriodConfirm" class="secondary-btn">Archive this period</button>
+      <button id="archiveCancel" class="secondary-btn">Cancel</button>
+    </div>
+    <p class="archive-note">Archived records stay safe, are excluded from active totals, and can be restored later.</p>
+  </div>
+</div>
+
+<div id="archiveAllDialog" class="sheet-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="archiveAllDialogTitle">
+  <div class="sheet-dialog-card archive-dialog-card">
+    <div class="sheet-dialog-header">
+      <h2 id="archiveAllDialogTitle">Archive all finance records</h2>
+      <button id="closeArchiveAllDialog" class="icon-btn" aria-label="Close">×</button>
+    </div>
+    <p id="archiveAllDialogText" class="archive-dialog-text"></p>
+    <div class="archive-dialog-options single-primary">
+      <button id="archiveAllConfirm" class="primary-btn">Archive all</button>
+      <button id="archiveAllCancel" class="secondary-btn">Cancel</button>
+    </div>
+    <p class="archive-note">This archives active finance records across <strong>every sheet</strong> in the app. Nothing is deleted.</p>
+  </div>
+</div>
+
+<div id="serviceDialog" class="sheet-dialog hidden" role="dialog" aria-modal="true" aria-labelledby="serviceDialogTitle">
+  <div class="sheet-dialog-card service-dialog-card">
+    <div class="sheet-dialog-header">
+      <h2 id="serviceDialogTitle">Services</h2>
+      <button id="closeServiceDialog" class="icon-btn" aria-label="Close">×</button>
+    </div>
+
+    <div class="service-add-form">
+      <div class="service-field">
+        <label for="serviceNameInput">Service name</label>
+        <input id="serviceNameInput" maxlength="50" placeholder="e.g. Milk">
+      </div>
+      <div class="service-field">
+        <label for="serviceAmountInput">Service amount</label>
+        <input id="serviceAmountInput" type="number" min="0" step="0.01" placeholder="e.g. 1500">
+      </div>
+      <button id="saveServiceBtn" class="primary-btn">Add service</button>
+    </div>
+
+    <div class="service-list-header">
+      <span>Saved services</span>
+      <span>Amount</span>
+    </div>
+    <div id="serviceList" class="service-list"></div>
+  </div>
+</div>
+
+<div id="sheetDialog" class="sheet-dialog hidden" role="dialog" aria-modal="true">
+  <div class="sheet-dialog-card">
+    <div class="sheet-dialog-header">
+      <h2 id="sheetDialogTitle">New sheet</h2>
+      <button id="closeSheetDialog" class="icon-btn">×</button>
+    </div>
+    <label class="sheet-name-label">
+      Sheet name
+      <input id="sheetNameInput" maxlength="40" placeholder="e.g. Bills">
+    </label>
+    <div class="sheet-dialog-actions">
+      <button id="cancelSheetDialog" class="secondary-btn">Cancel</button>
+      <button id="saveSheetDialog" class="primary-btn">Create</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script>
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("./sw.js", { scope: "./" })
+        .then(reg => {
+          console.info("Offline app ready", reg.scope);
+        })
+        .catch(err => {
+          console.warn("Offline support could not be enabled", err);
+        });
+    });
+  }
+</script>
+<script src="app.js"></script>
+</body>
+</html>
